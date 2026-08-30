@@ -20,9 +20,61 @@ const tickets = [];
 const comments = [];
 const activities = [];
 
-// Seed an admin user
-const adminUser = { _id: genId(), name: 'Admin', email: 'admin@example.com', password: 'admin', role: 'admin' };
-users.push(adminUser);
+// Seed demo users and tickets
+const adminUser = { _id: genId(), name: 'Admin', email: 'admin@example.com', password: 'admin123', role: 'admin' };
+const demoUser = { _id: genId(), name: 'Demo User', email: 'user@example.com', password: 'user1234', role: 'user' };
+users.push(adminUser, demoUser);
+
+const ticket1 = {
+  _id: genId(),
+  title: 'Unable to update payment method',
+  description: 'When trying to add a new credit card in the settings tab, the submit button is grayed out.',
+  category: 'Billing',
+  priority: 'High',
+  status: 'In Progress',
+  createdBy: demoUser._id,
+  assignedTo: adminUser._id,
+  createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  updatedAt: new Date(Date.now() - 3600000).toISOString(),
+};
+const ticket2 = {
+  _id: genId(),
+  title: 'Dashboard metrics not refreshing in real time',
+  description: 'The real-time chart on the dashboard seems stuck on data from 30 minutes ago.',
+  category: 'Technical',
+  priority: 'Urgent',
+  status: 'Open',
+  createdBy: demoUser._id,
+  assignedTo: null,
+  createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+};
+const ticket3 = {
+  _id: genId(),
+  title: 'Dark mode theme preference',
+  description: 'Would love to have an option for dark mode to reduce eye strain during night shifts.',
+  category: 'Feature Request',
+  priority: 'Low',
+  status: 'Resolved',
+  createdBy: demoUser._id,
+  assignedTo: adminUser._id,
+  createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+  updatedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+};
+tickets.push(ticket1, ticket2, ticket3);
+
+comments.push(
+  { _id: genId(), ticket: ticket1._id, author: demoUser._id, message: 'I tried on Chrome and Edge.', createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
+  { _id: genId(), ticket: ticket1._id, author: adminUser._id, message: 'Looking into payment gateway logs.', createdAt: new Date(Date.now() - 3600000).toISOString() }
+);
+
+activities.push(
+  { _id: genId(), ticket: ticket1._id, actor: demoUser._id, action: 'TICKET_CREATED', detail: 'Created with priority High', createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
+  { _id: genId(), ticket: ticket1._id, actor: adminUser._id, action: 'STATUS_CHANGED', detail: 'Open -> In Progress', createdAt: new Date(Date.now() - 3600000).toISOString() },
+  { _id: genId(), ticket: ticket2._id, actor: demoUser._id, action: 'TICKET_CREATED', detail: 'Created with priority Urgent', createdAt: new Date(Date.now() - 3600000 * 5).toISOString() },
+  { _id: genId(), ticket: ticket3._id, actor: demoUser._id, action: 'TICKET_CREATED', detail: 'Created with priority Low', createdAt: new Date(Date.now() - 3600000 * 24).toISOString() },
+  { _id: genId(), ticket: ticket3._id, actor: adminUser._id, action: 'STATUS_CHANGED', detail: 'In Progress -> Resolved', createdAt: new Date(Date.now() - 3600000 * 12).toISOString() }
+);
 
 // Middleware: demo protect (checks Authorization: Bearer <token>)
 const protect = (req, res, next) => {
@@ -197,6 +249,8 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Demo server running on port ${PORT}`));
+if (require.main === module && !process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`Demo server running on port ${PORT}`));
+}
 
 module.exports = app;
