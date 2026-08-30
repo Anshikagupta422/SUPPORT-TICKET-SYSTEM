@@ -94,10 +94,12 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-app.get('/api/health', (req, res) => res.json({ success: true, message: 'Demo API healthy' }));
+const router = express.Router();
+
+router.get('/health', (req, res) => res.json({ success: true, message: 'Demo API healthy' }));
 
 // Auth
-app.post('/api/auth/register', (req, res) => {
+router.post('/auth/register', (req, res) => {
   const { name, email, password, role } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ success: false, message: 'Name, email and password required' });
   if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) return res.status(400).json({ success: false, message: 'Email is already registered' });
@@ -109,7 +111,7 @@ app.post('/api/auth/register', (req, res) => {
   return res.status(201).json({ success: true, data: { ...out, token } });
 });
 
-app.post('/api/auth/login', (req, res) => {
+router.post('/auth/login', (req, res) => {
   const { email, password } = req.body || {};
   const user = users.find((u) => u.email.toLowerCase() === (email || '').toLowerCase() && u.password === password);
   if (!user) return res.status(401).json({ success: false, message: 'Invalid email or password' });
@@ -119,10 +121,10 @@ app.post('/api/auth/login', (req, res) => {
   return res.json({ success: true, data: { ...out, token } });
 });
 
-app.get('/api/auth/me', protect, (req, res) => res.json({ success: true, data: req.user }));
+router.get('/auth/me', protect, (req, res) => res.json({ success: true, data: req.user }));
 
 // Tickets
-app.post('/api/tickets', protect, (req, res) => {
+router.post('/tickets', protect, (req, res) => {
   const { title, description, category, priority } = req.body || {};
   if (!title || !description || !category) return res.status(400).json({ success: false, message: 'Title, description and category required' });
   const ticket = {
@@ -142,7 +144,7 @@ app.post('/api/tickets', protect, (req, res) => {
   return res.status(201).json({ success: true, data: ticket });
 });
 
-app.get('/api/tickets', protect, (req, res) => {
+router.get('/tickets', protect, (req, res) => {
   const { search, status, priority, category, page = '1', limit = '10' } = req.query;
   let list = tickets.slice();
   if (req.user.role !== 'admin') list = list.filter((t) => t.createdBy === req.user._id);
@@ -160,14 +162,14 @@ app.get('/api/tickets', protect, (req, res) => {
   return res.json({ success: true, data, pagination: { total: list.length, page: pageNum, limit: limitNum, totalPages: Math.ceil(list.length / limitNum) || 1 } });
 });
 
-app.get('/api/tickets/:id', protect, (req, res) => {
+router.get('/tickets/:id', protect, (req, res) => {
   const ticket = tickets.find((t) => t._id === req.params.id);
   if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
   if (req.user.role !== 'admin' && ticket.createdBy !== req.user._id) return res.status(403).json({ success: false, message: 'Not authorized to view this ticket' });
   return res.json({ success: true, data: ticket });
 });
 
-app.patch('/api/tickets/:id/status', protect, adminOnly, (req, res) => {
+router.patch('/tickets/:id/status', protect, adminOnly, (req, res) => {
   const ticket = tickets.find((t) => t._id === req.params.id);
   if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
   const { status } = req.body || {};
@@ -179,7 +181,7 @@ app.patch('/api/tickets/:id/status', protect, adminOnly, (req, res) => {
   return res.json({ success: true, data: ticket });
 });
 
-app.patch('/api/tickets/:id', protect, adminOnly, (req, res) => {
+router.patch('/tickets/:id', protect, adminOnly, (req, res) => {
   const ticket = tickets.find((t) => t._id === req.params.id);
   if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
   const { priority, category, assignedTo } = req.body || {};
@@ -199,7 +201,7 @@ app.patch('/api/tickets/:id', protect, adminOnly, (req, res) => {
   return res.json({ success: true, data: ticket });
 });
 
-app.delete('/api/tickets/:id', protect, adminOnly, (req, res) => {
+router.delete('/tickets/:id', protect, adminOnly, (req, res) => {
   const idx = tickets.findIndex((t) => t._id === req.params.id);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Ticket not found' });
   const ticket = tickets[idx];
@@ -211,7 +213,7 @@ app.delete('/api/tickets/:id', protect, adminOnly, (req, res) => {
 });
 
 // Comments
-app.post('/api/tickets/:id/comments', protect, (req, res) => {
+router.post('/tickets/:id/comments', protect, (req, res) => {
   const ticket = tickets.find((t) => t._id === req.params.id);
   if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
   if (req.user.role !== 'admin' && ticket.createdBy !== req.user._id) return res.status(403).json({ success: false, message: 'Not authorized to comment' });
@@ -224,7 +226,7 @@ app.post('/api/tickets/:id/comments', protect, (req, res) => {
   return res.status(201).json({ success: true, data: out });
 });
 
-app.get('/api/tickets/:id/comments', protect, (req, res) => {
+router.get('/tickets/:id/comments', protect, (req, res) => {
   const ticket = tickets.find((t) => t._id === req.params.id);
   if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
   if (req.user.role !== 'admin' && ticket.createdBy !== req.user._id) return res.status(403).json({ success: false, message: 'Not authorized to view comments' });
@@ -233,13 +235,16 @@ app.get('/api/tickets/:id/comments', protect, (req, res) => {
 });
 
 // Activity
-app.get('/api/tickets/:id/activity', protect, (req, res) => {
+router.get('/tickets/:id/activity', protect, (req, res) => {
   const ticket = tickets.find((t) => t._id === req.params.id);
   if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
   if (req.user.role !== 'admin' && ticket.createdBy !== req.user._id) return res.status(403).json({ success: false, message: 'Not authorized to view activity' });
   const out = activities.filter((a) => a.ticket === ticket._id).map((a) => ({ ...a, actor: users.find((u) => u._id === a.actor) ? { _id: a.actor, name: users.find((u) => u._id === a.actor).name, role: users.find((u) => u._id === a.actor).role } : null }));
   return res.json({ success: true, data: out });
 });
+
+app.use('/api', router);
+app.use('/', router);
 
 // Serve frontend in production (optional)
 if (process.env.NODE_ENV === 'production') {

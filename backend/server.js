@@ -22,10 +22,12 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-app.get('/api/health', (req, res) => res.json({ success: true, message: 'API is healthy' }));
+app.get(['/api/health', '/health'], (req, res) => res.json({ success: true, message: 'API is healthy' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/auth', authRoutes);
+app.use('/tickets', ticketRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -48,6 +50,8 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
 
 module.exports = app;
