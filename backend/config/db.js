@@ -7,6 +7,10 @@ const connectDB = async () => {
     if (process.env.MONGO_URI) {
       const conn = await mongoose.connect(process.env.MONGO_URI);
       console.log(`MongoDB connected: ${conn.connection.host}`);
+      if (process.env.NODE_ENV !== 'production') {
+        const { seedDemoData } = require('../utils/seed');
+        await seedDemoData();
+      }
       return;
     }
 
@@ -26,6 +30,8 @@ const connectDB = async () => {
       const uri = mongoServer.getUri();
       const conn = await mongoose.connect(uri);
       console.log(`Connected to in-memory MongoDB`);
+      const { seedDemoData } = require('../utils/seed');
+      await seedDemoData();
     } catch (memErr) {
       console.error(`In-memory MongoDB failed: ${memErr.message}`);
       process.exit(1);

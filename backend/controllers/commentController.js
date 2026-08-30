@@ -13,7 +13,8 @@ const addComment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Ticket not found' });
     }
 
-    if (req.user.role !== 'admin' && String(ticket.createdBy) !== String(req.user._id)) {
+    const createdById = ticket.createdBy?._id || ticket.createdBy;
+    if (req.user.role !== 'admin' && String(createdById) !== String(req.user._id)) {
       return res.status(403).json({ success: false, message: 'Not authorized to comment on this ticket' });
     }
 
@@ -47,7 +48,8 @@ const getComments = async (req, res, next) => {
     if (!ticket) {
       return res.status(404).json({ success: false, message: 'Ticket not found' });
     }
-    if (req.user.role !== 'admin' && String(ticket.createdBy) !== String(req.user._id)) {
+    const createdById = ticket.createdBy?._id || ticket.createdBy;
+    if (req.user.role !== 'admin' && String(createdById) !== String(req.user._id)) {
       return res.status(403).json({ success: false, message: 'Not authorized to view these comments' });
     }
 
